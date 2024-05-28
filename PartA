@@ -11,8 +11,13 @@ public class PartA {
 	public static short[][] grayImage;
 	public static short[][] source;
 	public static short[][] template;
+	public static short[][] Nimage;
+
 	public static int width;
 	public static int height;
+	public static int TempSize;
+	public static int min;
+
 	private static BufferedImage image;
 	private static BufferedImage image_t;
 
@@ -22,7 +27,7 @@ public class PartA {
 		String fileNameInp="TenCardG.jpg";
  	    String fileNameOut="Template.jpg";
  	    
- 	    //readColourImage(fileNameInp);
+ 	    //Getting width and height of the source image and template
  	   File inp=new File(fileNameInp);
        try {
 		image = ImageIO.read(inp);
@@ -34,8 +39,8 @@ public class PartA {
        int height_original = image.getHeight(); 
        
        System.out.println("Dimension of the image: WxH= " + width_original + " x "+height_original);
-        	    //readColourImage(fileNameOut);
- 	   File inp_2=new File(fileNameOut);
+
+       File inp_2=new File(fileNameOut);
        try {
 		image_t = ImageIO.read(inp_2);
 	} catch (IOException e) {
@@ -49,8 +54,26 @@ public class PartA {
 
        //reading the 2 images
        source = readColourImage(fileNameInp);
-
        template = readColourImage(fileNameOut);
+       
+       //TempSize=r2*c2;
+       TempSize = template.length;//height*width [height,width]
+       //System.out.println(TempSize);
+       min = 1000000;
+       //Absolute difference Matrix for 
+       //i=1:(r1-r2+1)
+		//for j=1:(c1-c2+1)
+		//Nimage=Target(i:i+r2-1,j:j+c2-1);
+		//absDiff=sum(sum(abs(Nimage-Template)))/TempSize;
+		//absDiffMat(i,j)=absDiff;
+		       
+       for(int i = 1;i<(height_original - height_template + 1);i++)
+       {
+	       for(int j=1;j<(width_original - width_template + 1);j++) {
+	    	   
+	    	   
+	       }
+       }
        
  	    
 	}//end of main
@@ -98,6 +121,5 @@ public class PartA {
 }//END OF readColourImage
    
 	
-
 }
 //Ctrl + Shift + o imports everything that needs to be imported
