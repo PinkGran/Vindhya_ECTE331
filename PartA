@@ -14,6 +14,9 @@ public class PartA {
 	public static int width;
 	public static int height;
 	private static BufferedImage image;
+	private static BufferedImage image_t;
+
+	
 	
 	public static void main(String[] args) {
 		String fileNameInp="TenCardG.jpg";
@@ -34,13 +37,13 @@ public class PartA {
         	    //readColourImage(fileNameOut);
  	   File inp_2=new File(fileNameOut);
        try {
-		image = ImageIO.read(inp_2);
+		image_t = ImageIO.read(inp_2);
 	} catch (IOException e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
-       int width_template = image.getWidth();
-       int height_template = image.getHeight(); 
+       int width_template = image_t.getWidth();
+       int height_template = image_t.getHeight(); 
        
        System.out.println("Dimension of the template: WxH= " + width_template + " x "+height_template);
 
