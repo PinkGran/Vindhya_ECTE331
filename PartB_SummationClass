@@ -1,0 +1,11 @@
+package projectB;
+
+public class Summation {
+	public static int calcsum(int n) {
+		int sum = 0;
+		for (int i = 0; i <= n; i++) {
+			sum += i;//finding summation 
+		}
+		return sum;
+	}
+}
