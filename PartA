@@ -1,125 +1,173 @@
 package projectpractice;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
-public class PartA {
-	public static short[][] grayImage;
-	public static short[][] source;
-	public static short[][] template;
-	public static short[][] Nimage;
+public class PartA_4 {
 
+	public static short[][] grayImage;
 	public static int width;
 	public static int height;
-	public static int TempSize;
-	public static int min;
+	public static short[][] source;
+	public static short[][] template;
+	public static BufferedImage image;
+	public static BufferedImage image_t;
+	public static int[][] absDiffMatrix;
 
-	private static BufferedImage image;
-	private static BufferedImage image_t;
+	public static void main(String[] args) throws IOException {
+		String fileNameInp = "TenCardG.jpg";
+		String fileNameOut = "Template_original.jpg";
 
-	
-	
-	public static void main(String[] args) {
-		String fileNameInp="TenCardG.jpg";
- 	    String fileNameOut="Template.jpg";
- 	    
- 	    //Getting width and height of the source image and template
- 	   File inp=new File(fileNameInp);
-       try {
-		image = ImageIO.read(inp);
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
+		// reading the source image
+		File inp = new File(fileNameInp);
+		try {
+			image = ImageIO.read(inp);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		source = readColourImage(fileNameInp);
+
+		// reading the template
+		File inp_2 = new File(fileNameOut);
+		try {
+			image_t = ImageIO.read(inp_2);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		template = readColourImage(fileNameOut);
+
+		// getting the dimensions of the images
+		int width_original = image.getWidth();
+		int height_original = image.getHeight();
+		int width_template = image_t.getWidth();
+		int height_template = image_t.getHeight();
+
+		System.out.println("Dimension of the image: Width x Height= " + width_original + " x " + height_original);
+		System.out.println("Dimension of the template: Width x Height= " + width_template + " x " + height_template);
+
+		absDiffMatrix = new int[height_original - height_template + 1][width_original - width_template + 1];
+
+		
+		// Measure execution time of the template matching
+	    long start = System.nanoTime();
+	    
+		// apply template matching
+		template_Matching(source, template);
+		long end = System.nanoTime();
+	    long duration = (end - start);  // Duration in nanoseconds
+	    double seconds = duration / 1_000_000_000.0;  // Convert to seconds
+	    System.out.println("Template matching execution time: " + seconds + " seconds");
+
+		// saving the resulting image
+		writeColourImage("final.jpg");
+
+		System.out.println("Resulting image saved as: final.jpg");
+
+		// checking to see if the file exists
+		File resultfile = new File("final.jpg");
+		if (resultfile.exists()) {
+			System.out.println("final.jpg created.");
+		} else {
+			System.out.println("failed to create the file final.jpg.");
+		}
 	}
-       int width_original = image.getWidth();
-       int height_original = image.getHeight(); 
-       
-       System.out.println("Dimension of the image: WxH= " + width_original + " x "+height_original);
 
-       File inp_2=new File(fileNameOut);
-       try {
-		image_t = ImageIO.read(inp_2);
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
+	public static void writeColourImage(String fileName) throws IOException {
+		ImageIO.write(image, "jpg", new File(fileName));
 	}
-       int width_template = image_t.getWidth();
-       int height_template = image_t.getHeight(); 
-       
-       System.out.println("Dimension of the template: WxH= " + width_template + " x "+height_template);
 
-       //reading the 2 images
-       source = readColourImage(fileNameInp);
-       template = readColourImage(fileNameOut);
-       
-       //TempSize=r2*c2;
-       TempSize = template.length;//height*width [height,width]
-       //System.out.println(TempSize);
-       min = 1000000;
-       //Absolute difference Matrix for 
-       //i=1:(r1-r2+1)
-		//for j=1:(c1-c2+1)
-		//Nimage=Target(i:i+r2-1,j:j+c2-1);
-		//absDiff=sum(sum(abs(Nimage-Template)))/TempSize;
-		//absDiffMat(i,j)=absDiff;
-		       
-       for(int i = 1;i<(height_original - height_template + 1);i++)
-       {
-	       for(int j=1;j<(width_original - width_template + 1);j++) {
-	    	   
-	    	   
-	       }
-       }
-       
- 	    
-	}//end of main
-	
-	public static short[][] readColourImage(String fileName) {
-        
-        try
-        {
-         // RGB pixel values
-         byte[] pixels;
+	public static short[][] readColourImage(String fileName) throws IOException {
+		BufferedImage img = ImageIO.read(new File(fileName));
+		width = img.getWidth();
+		height = img.getHeight();
 
-         File inp=new File(fileName);
-         image = ImageIO.read(inp);
-         width = image.getWidth();
-         height = image.getHeight();          
-        
-         
-         pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-         System.out.println("Dimension of the image: WxH= " + width + " x "+height+" "+ "| num of pixels: "+ pixels.length);
-    
-         //rgb2gray in a 2D array grayImage                 
-         int pr;// red
-         int pg;//  green
-         int pb;// blue     
+		// RGB pixel values
+		byte[] pixels;
+		pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+		grayImage = new short[height][width];
 
-        grayImage =new short [height][width];
-        int coord;
-        for (int i=0; i<height;i++)
-     	   for(int j=0;j<width;j++)
-     	   {        		     
-     		   coord= 3*(i*width+j);
-     		   pr= ((short) pixels[coord] & 0xff); // red
-                pg= (((short) pixels[coord+1] & 0xff));//  green
-                pb= (((short) pixels[coord+2] & 0xff));// blue                
-                
-     		   grayImage[i][j]=(short)Math.round(0.299 *pr + 0.587 * pg  + 0.114 * pb);         
-     		   
-     	   }  
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-            } 
-        return grayImage;
+		int coord, pr, pg, pb;
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				coord = 3 * (i * width + j);
+				pr = pixels[coord] & 0xff;
+				pg = pixels[coord + 1] & 0xff;
+				pb = pixels[coord + 2] & 0xff;
+				grayImage[i][j] = (short) Math.round(0.299 * pr + 0.587 * pg + 0.114 * pb);
+			}
+		}
 
-}//END OF readColourImage
-   
-	
+		return grayImage;
+	}
+
+	public static void template_Matching(short[][] source, short[][] template) {
+		int r1 = source.length; //height of source image
+		int c1 = source[0].length;//width of source image
+		int r2 = template.length;//height of template
+		int c2 = template[0].length;//width of template
+		int tempSize = r2 * c2;
+		double min = 100000000;
+
+		// Calculate the absolute differences and find the minimum
+		for (int i = 0; i <= r1 - r2; i++) {
+			for (int j = 0; j <= c1 - c2; j++) {
+				double absDiff = 0;
+				for (int x = 0; x < r2; x++) {
+					for (int y = 0; y < c2; y++) {
+						absDiff += Math.abs(source[x + i][y + j] - template[x][y]);
+					}
+				}
+				absDiff /= tempSize;
+				absDiffMatrix[i][j] = (int) absDiff;
+
+				if (absDiff < min) {
+					min = absDiff;
+				}
+			}
+		}
+
+		// finding the threshold
+		double threshold = 10 * min;
+
+		// Find all the coordinates that are below or equal to the threshold
+		List<int[]> points = new ArrayList<int[]>();
+		for (int i = 0; i <= r1 - r2; i++) {
+			for (int j = 0; j <= c1 - c2; j++) {
+				if (absDiffMatrix[i][j] <= threshold) {
+					points.add(new int[] { i, j });
+				}
+			}
+		}
+
+		// Draw rectangles at the matched points
+		for (int[] X : points) {
+			addRectangle(image, X[1], X[0], c2, r2);
+		}
+	}
+
+	/**
+	 * 
+	 * @param img
+	 * @param xCoord
+	 * @param yCoord
+	 * @param rectWidth
+	 * @param rectHeight
+	 * @return
+	 */
+	public static void addRectangle(BufferedImage img, int i, int j, int rectWidth, int rectHeight) {
+		Graphics2D g2D = img.createGraphics();
+		g2D.setColor(Color.RED);
+		g2D.drawRect(i, j, rectWidth, rectHeight);
+		g2D.dispose();
+	}
 }
-//Ctrl + Shift + o imports everything that needs to be imported
