@@ -1,0 +1,196 @@
+package projectpractice;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+
+public class PartA_multi {
+
+	public static short[][] grayImage;
+	public static int width;
+	public static int height;
+	public static int numOfThreads;
+
+	public static short[][] source;
+	public static short[][] template;
+	public static BufferedImage image;
+	public static BufferedImage image_t;
+	public static double[][] absDiffMatrix;
+
+	public static double min = 100000000.0;
+
+	public static void main(String[] args) throws IOException {
+		String fileNameInp = "TenCardG.jpg";
+		String fileNameOut = "Template_original.jpg";
+
+		// reading the source image
+		File inp = new File(fileNameInp);
+		try {
+			image = ImageIO.read(inp);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		source = readColourImage(fileNameInp);
+
+		// reading the template
+		File inp_2 = new File(fileNameOut);
+		try {
+			image_t = ImageIO.read(inp_2);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		template = readColourImage(fileNameOut);
+
+		// getting the dimensions of the images
+		int width_original = image.getWidth();
+		int height_original = image.getHeight();
+		int width_template = image_t.getWidth();
+		int height_template = image_t.getHeight();
+
+		System.out.println("Dimension of the image: Width x Height= " + width_original + " x " + height_original);
+		System.out.println("Dimension of the template: Width x Height= " + width_template + " x " + height_template);
+
+		absDiffMatrix = new double[height_original - height_template + 1][width_original - width_template + 1];
+
+		numOfThreads = 14;
+		System.out.println("The number of threads are: " + numOfThreads);
+
+		// Measure execution time of the template matching
+		long start = System.nanoTime();
+
+		// applying template matching
+		template_matchingmulti(source, template, numOfThreads);
+
+		long end = System.nanoTime();
+		long duration = (end - start); // Duration in nanoseconds
+		double seconds = duration / 1_000_000_000.0; // Convert to seconds
+		System.out.println("Template matching execution time: " + seconds + " seconds");
+
+		// saving the resulting image
+		writeColourImage("final.jpg");
+
+		System.out.println("Resulting image saved as: final.jpg");
+
+		// checking to see if the file exists
+		File resultfile = new File("final.jpg");
+		if (resultfile.exists()) {
+			System.out.println("final.jpg created.");
+		} else {
+			System.out.println("failed to create the file final.jpg.");
+		}
+	}// end of main
+
+	public static short[][] readColourImage(String fileName) throws IOException {
+		BufferedImage img = ImageIO.read(new File(fileName));
+		width = img.getWidth();
+		height = img.getHeight();
+
+		// RGB pixel values
+		byte[] pixels;
+		pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+		grayImage = new short[height][width];
+
+		int coord, pr, pg, pb;
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				coord = 3 * (i * width + j);
+				pr = pixels[coord] & 0xff;
+				pg = pixels[coord + 1] & 0xff;
+				pb = pixels[coord + 2] & 0xff;
+				grayImage[i][j] = (short) Math.round(0.299 * pr + 0.587 * pg + 0.114 * pb);
+			}
+		}
+
+		return grayImage;
+	}// end of readColourImage
+
+	public static void template_matchingmulti(final short[][] s_Img, final short[][] t_Img, int numOfThreads) {
+		int row1 = s_Img.length; // height of source image
+		final int col1 = s_Img[0].length; // width of source image
+		final int row2 = t_Img.length;// height of template
+		final int col2 = t_Img[0].length; // width of template
+		final int tempSize = row2 * col2;
+
+		int segmentsize = (row1 - row2 + 1) / numOfThreads;
+
+		Thread[] multi_threads = new Thread[numOfThreads]; // creating as many threads as numOfThreads
+
+		for (int t = 0; t < numOfThreads; t++) {
+			final int x = t * segmentsize;// where x is the starting row
+			final int y = (t == numOfThreads - 1) ? (row1 - row2 + 1) : (x + segmentsize);// checks if the value of
+																							// y(ending row) is the last
+																							// thread, if it is then it
+																							// is assigned
+			// row1 - row2 + 1, else it is assigned x+segmentsize
+
+			multi_threads[t] = new Thread(new Runnable() {
+				public void run() {
+					for (int i = x; i < y; i++) {
+						for (int j = 0; j <= col1 - col2; j++) {
+							double absDiff = 0;
+							for (int m = 0; m < row2; m++) {
+								for (int n = 0; n < col2; n++) {
+									absDiff += Math.abs(s_Img[m + i][n + j] - t_Img[m][n]);
+								}
+							}
+							absDiff /= tempSize;
+							absDiffMatrix[i][j] = absDiff;
+
+							if (absDiff < min) {
+								min = absDiff;
+							}
+						}
+					}
+				}
+			});
+			multi_threads[t].start();
+		}
+
+		try {
+			for (int t = 0; t < numOfThreads; t++) {  // iterate over all threads
+			    multi_threads[t].join();              // wait for the thread at index 't' to complete
+			}
+
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		// finding the threshold
+		double threshold = 10 * min;
+
+		// Find all the coordinates that are below or equal to the threshold
+		List<int[]> points = new ArrayList<int[]>();
+
+		for (int i = 0; i <= row1 - row2; i++) {
+			for (int j = 0; j <= col1 - col2; j++) {
+				if (absDiffMatrix[i][j] <= threshold) {
+					points.add(new int[] { i, j });
+				}
+			}
+		}
+
+		for (int[] x : points) {
+			addRectangle(image, x[1], x[0], col2, row2);
+		}
+	}// end of template_matchingmulti
+
+	public static void writeColourImage(String fileName) throws IOException {
+		ImageIO.write(image, "jpg", new File(fileName));
+	}
+
+	public static void addRectangle(BufferedImage img, int i, int j, int rectWidth, int rectHeight) {
+		Graphics2D g2D = img.createGraphics();
+		g2D.setColor(Color.BLUE);
+		g2D.drawRect(i, j, rectWidth, rectHeight);
+		g2D.dispose();
+	}
+}
