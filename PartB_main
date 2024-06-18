@@ -1,0 +1,201 @@
+package projectB;
+
+class Data {
+	int A1, A2, A3, B1, B2, B3;
+	boolean FuncA1 = false;
+	boolean FuncA2 = false;
+	boolean FuncA3 = false;
+	boolean FuncB1 = false;
+	boolean FuncB2 = false;
+	boolean FuncB3 = false;
+}
+
+public class TaskB { // MAIN
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+//		ThreadA t = new ThreadA();
+//		t.start();
+
+		Data my_sample = new Data();
+
+		int i;
+		for (i = 0; i < 300; i++) {// for 300 iterations
+			System.out.println("thread" + i + "\n");
+
+			my_sample.FuncA1 = false;
+			my_sample.FuncA2 = false;
+			my_sample.FuncA3 = false;
+			my_sample.FuncB1 = false;
+			my_sample.FuncB2 = false;
+			my_sample.FuncB3 = false;
+
+			ThreadA ta = new ThreadA(my_sample);
+			ThreadB tb = new ThreadB(my_sample);
+
+			ta.start();
+			tb.start();
+			try {
+				ta.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			try {
+				tb.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			System.out.println("=========================================");
+
+		}
+
+	}
+
+}
+
+class ThreadA extends Thread {
+	private Data sample;
+
+	public ThreadA(Data sample) { // constructor
+		this.sample = sample;
+
+	}
+
+	public void run() {
+
+		synchronized (sample) {
+			int n = 500;
+			sample.A1 = Summation.calcsum(n);
+
+			// print out value of A1
+			System.out.println("A1: " + sample.A1);
+
+			sample.FuncB2 = true;
+			sample.notify();
+			// maybe put a break function
+		}
+
+		synchronized (sample) {
+			while (sample.FuncA2 == false) {
+				System.out.println("first run b2");
+				try {
+					sample.wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				// maybe put a break
+			}
+		}
+
+		synchronized (sample) {
+			while (sample.FuncA2 == true) {
+				// calculate for A2
+				int n = 300;
+				sample.A2 = sample.B2 + Summation.calcsum(n);
+				System.out.println("A2 = " + sample.A2);
+
+				sample.FuncB3 = true;
+				sample.notify();
+				break;
+			}
+		}
+		synchronized (sample) {
+			while (sample.FuncA3 == false) {
+				System.out.println("first run b3");
+				try {
+					sample.wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				break;
+			}
+		}
+		synchronized (sample) {
+			while (sample.FuncA3 == true) {
+				// calculate for A3
+				int n = 400;
+				sample.A3 = sample.B3 + Summation.calcsum(n);
+				System.out.println("A3 = " + sample.A3);
+				sample.notify();
+				break;
+			}
+		}
+
+	}// end of run()
+
+	private void synchrnoized(Data sample2) {
+		// TODO Auto-generated method stub
+
+	}
+}// end of threadA
+
+class ThreadB extends Thread {
+	private Data sample;
+
+	public ThreadB(Data sample) { // constructor
+		this.sample = sample;
+
+	}
+
+	public void run() {
+		synchronized (sample) {
+			// calculate for B1
+			int n = 250;
+			sample.B1 = Summation.calcsum(n);
+		}
+		synchronized (sample) {
+			while (sample.FuncB2 == false) {
+				System.out.println("wait until A1 is done");
+				try {
+					sample.wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				break;
+			}
+		}
+
+		synchronized (sample) {
+			while (sample.FuncB2 == true) {
+				// calculate for B2
+				int n = 200;
+				sample.B2 = sample.A1 + Summation.calcsum(n);
+				System.out.println("B2= " + sample.B2);
+				sample.FuncA2 = true;
+				sample.notify();
+				break;
+			}
+		}
+		synchronized (sample) {
+			while (sample.FuncB3 == false) {
+				System.out.println("wait until A2 is done");
+				try {
+					sample.wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				break;
+			}
+		}
+		synchronized (sample) {
+			while (sample.FuncB3 == true) {
+				// calculate for B3
+				int n = 400;
+				sample.B3 = sample.A2 + Summation.calcsum(n);
+				System.out.println("B3= " + sample.B3);
+				sample.FuncA3 = true;
+				sample.notify();
+
+				break;
+			}
+		}
+
+	}
+}// end of ThreadB
